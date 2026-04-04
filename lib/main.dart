@@ -674,31 +674,3 @@ class CustomBottomNavBar extends StatelessWidget {
     );
   }
 }
-
-  Widget _buildNavItem({required IconData icon, required String label, bool isActive = false}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: EdgeInsets.all(isActive ? 8.0 : 0.0),
-          decoration: isActive 
-              ? BoxDecoration(color: AppColors.cardBgTint, borderRadius: BorderRadius.circular(12))
-              : null,
-          child: Icon(
-            icon,
-            color: isActive ? AppColors.actionCardBg : Colors.grey.shade500,
-            size: 24,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: isActive ? AppColors.actionCardBg : Colors.grey.shade500,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          ),
-        )
-      ],
-    );
-  }
