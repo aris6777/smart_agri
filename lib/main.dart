@@ -20,7 +20,7 @@ class SmartAgriApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF6F9F6), // Off-white/light sage background
         primaryColor: const Color(0xFF135A3B),
       ),
-      home: const DashboardScreen(),
+      home: const MainLayoutScreen(),
     );
   }
 }
@@ -109,9 +109,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             ),
-            
-            // Bottom Navigation Area
-            const CustomBottomNavBar(),
           ],
         ),
       ),
@@ -559,9 +556,63 @@ class RecentAlertsSection extends StatelessWidget {
   }
 }
 
-// Custom Bottom Navigation Bar to match specific style
+// ==========================================
+// MASTER APP SHELL (NAVIGATION CONTROLLER)
+// ==========================================
+class MainLayoutScreen extends StatefulWidget {
+  const MainLayoutScreen({Key? key}) : super(key: key);
+
+  @override
+  State<MainLayoutScreen> createState() => _MainLayoutScreenState();
+}
+
+class _MainLayoutScreenState extends State<MainLayoutScreen> {
+  int _currentIndex = 0;
+
+  // This IndexedStack holds all your screens and remembers their state!
+  final List<Widget> _screens = [
+    const DashboardScreen(),
+    const PlantScanScreen(),
+    const ResultsScreen(),
+    const AdviceScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // --- SMOOTH FADE TRANSITION ---
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300), // How fast the fade happens
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        child: _screens[_currentIndex], // The active screen
+      ),
+      // ------------------------------
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index; // Instantly swaps the screen and moves the green highlight
+          });
+        },
+      ),
+    );
+  }
+}
+
+// ==========================================
+// UPGRADED DYNAMIC NAVIGATION BAR
+// ==========================================
 class CustomBottomNavBar extends StatelessWidget {
-  const CustomBottomNavBar({Key? key}) : super(key: key);
+  final int currentIndex;
+  final Function(int) onTap;
+
+  const CustomBottomNavBar({
+    Key? key,
+    required this.currentIndex,
+    required this.onTap,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -574,44 +625,55 @@ class CustomBottomNavBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNavItem(icon: Icons.dashboard, label: 'Dashboard', isActive: true),
-          // --- NEW CLICKABLE SCAN BUTTON ---
           GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PlantScanScreen()),
-              );
-            },
-            child: _buildNavItem(icon: Icons.document_scanner_outlined, label: 'Scan'),
+            onTap: () => onTap(0),
+            child: _buildNavItem(icon: Icons.dashboard, label: 'Dashboard', isActive: currentIndex == 0),
           ),
-          // ---------------------------------
-          // --- NEW CLICKABLE RESULTS BUTTON ---
           GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ResultsScreen()), 
-              );
-            },
-            child: _buildNavItem(icon: Icons.analytics_outlined, label: 'Results'),
+            onTap: () => onTap(1),
+            child: _buildNavItem(icon: Icons.document_scanner_outlined, label: 'Scan', isActive: currentIndex == 1),
           ),
-          // ------------------------------------
-          // --- CLICKABLE ADVICE BUTTON ---
           GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AdviceScreen()), 
-              );
-            },
-            child: _buildNavItem(icon: Icons.lightbulb_outline, label: 'Advice'),
+            onTap: () => onTap(2),
+            child: _buildNavItem(icon: Icons.analytics_outlined, label: 'Results', isActive: currentIndex == 2),
           ),
-          // -------------------------------
+          GestureDetector(
+            onTap: () => onTap(3),
+            child: _buildNavItem(icon: Icons.lightbulb_outline, label: 'Advice', isActive: currentIndex == 3),
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildNavItem({required IconData icon, required String label, required bool isActive}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: EdgeInsets.all(isActive ? 8.0 : 0.0),
+          decoration: isActive
+              ? BoxDecoration(color: const Color(0xFFF0F5F1), borderRadius: BorderRadius.circular(12))
+              : null,
+          child: Icon(
+            icon,
+            color: isActive ? const Color(0xFF135A3B) : Colors.grey.shade500,
+            size: 24,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: isActive ? const Color(0xFF135A3B) : Colors.grey.shade500,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
+        )
+      ],
+    );
+  }
+}
 
   Widget _buildNavItem({required IconData icon, required String label, bool isActive = false}) {
     return Column(
@@ -640,4 +702,3 @@ class CustomBottomNavBar extends StatelessWidget {
       ],
     );
   }
-}

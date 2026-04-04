@@ -105,9 +105,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 ),
               ),
             ),
-
-            // Bottom Navigation (Results tab active)
-            const CustomBottomNavBarResultsMode(),
           ],
         ),
       ),
@@ -451,65 +448,9 @@ class TreatmentActionCard extends StatelessWidget {
 }
 
 // Configured Bottom Nav Bar specifically for Results screen
-class CustomBottomNavBarResultsMode extends StatelessWidget {
-  const CustomBottomNavBarResultsMode({Key? key}) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          // --- CLICKABLE DASHBOARD BUTTON (GO BACK) ---
-          GestureDetector(
-            onTap: () {
-              Navigator.pop(context); 
-            },
-            child: _buildNavItem(icon: Icons.dashboard, label: 'Dashboard'),
-          ),
-          // --------------------------------------------
-          _buildNavItem(icon: Icons.document_scanner_outlined, label: 'Scan'),
-          _buildNavItem(icon: Icons.analytics, label: 'Results', isActive: true),
-          _buildNavItem(icon: Icons.lightbulb_outline, label: 'Advice'),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildNavItem({required IconData icon, required String label, bool isActive = false}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: EdgeInsets.all(isActive ? 8.0 : 0.0),
-          decoration: isActive 
-              ? BoxDecoration(color: ResultsColors.detailedCardBg, borderRadius: BorderRadius.circular(12))
-              : null,
-          child: Icon(
-            icon,
-            color: isActive ? ResultsColors.actionCardBg : Colors.grey.shade500,
-            size: 24,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: isActive ? ResultsColors.actionCardBg : Colors.grey.shade500,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          ),
-        )
-      ],
-    );
-  }
-}
-
+ 
 // Custom Painter to draw the dashed circular border seen in the design
 class DashedCirclePainter extends CustomPainter {
   final Color color;

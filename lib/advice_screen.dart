@@ -112,8 +112,7 @@ class _AdviceScreenState extends State<AdviceScreen> {
               ),
             ),
 
-            // Bottom Navigation (Advice tab active)
-            const CustomBottomNavBarAdviceMode(),
+          
           ],
         ),
       ),
@@ -426,62 +425,6 @@ class ProTipCard extends StatelessWidget {
   }
 }
 
-// Configured Bottom Nav Bar specifically for Advice screen
-class CustomBottomNavBarAdviceMode extends StatelessWidget {
-  const CustomBottomNavBarAdviceMode({Key? key}) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          // --- GO BACK HOME BUTTON ---
-          GestureDetector(
-            onTap: () {
-              Navigator.pop(context); 
-            },
-            child: _buildNavItem(icon: Icons.dashboard, label: 'Dashboard'),
-          ),
-          // ---------------------------
-          _buildNavItem(icon: Icons.document_scanner_outlined, label: 'Scan'),
-          _buildNavItem(icon: Icons.analytics_outlined, label: 'Results'),
-          _buildNavItem(icon: Icons.psychology, label: 'Advice', isActive: true), // Changed icon to match UI
-        ],
-      ),
-    );
-  }
 
-  Widget _buildNavItem({required IconData icon, required String label, bool isActive = false}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: EdgeInsets.all(isActive ? 8.0 : 0.0),
-          decoration: isActive 
-              ? BoxDecoration(color: AdviceColors.proTipBg, borderRadius: BorderRadius.circular(12))
-              : null,
-          child: Icon(
-            icon,
-            color: isActive ? AdviceColors.actionCardBg : Colors.grey.shade500,
-            size: 24,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: isActive ? AdviceColors.actionCardBg : Colors.grey.shade500,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          ),
-        )
-      ],
-    );
-  }
-}
+ 
