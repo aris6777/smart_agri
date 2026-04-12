@@ -21,12 +21,12 @@ class _ResultsScreenState extends State<ResultsScreen> {
   void initState() {
     super.initState();
     if (widget.imageFile != null) {
-      _runAIAnalysis(); // Trigger the real AI when the screen opens!
+      _runAIAnalysis(); // Trigger the real AI when the screen opens
     }
   }
 
   Future<void> _runAIAnalysis() async {
-    // 1. PASTE YOUR GOOGLE AI STUDIO API KEY HERE
+    // google studio API dito
     const apiKey = 'AIzaSyB2tfUgZU3Cuu2_kC1WJqpWnoTZOcd30Po'; 
     
 
@@ -49,7 +49,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
       ''');
       final imagePart = DataPart('image/jpeg', imageBytes);
 
-      // 4. Send to Google's Cloud Servers!
+      // 4. Send to Google's Cloud Servers
       final response = await model.generateContent([
         Content.multi([prompt, imagePart])
       ]);
@@ -115,7 +115,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                       const Text("Gemini AI is analyzing the leaf...", style: TextStyle(fontSize: 18, color: Colors.grey, fontStyle: FontStyle.italic)),
                     ] else ...[
                       Icon(
-                        // Dynamically change the icon if it's healthy or sick!
+                        // Dynamically change the icon if it's healthy or sick
                         diagnosis.toLowerCase().contains("healthy") ? Icons.check_circle_outline : Icons.warning_amber_rounded, 
                         color: diagnosis.toLowerCase().contains("healthy") ? const Color(0xFF81C784) : const Color(0xFFFFB74D), 
                         size: 64

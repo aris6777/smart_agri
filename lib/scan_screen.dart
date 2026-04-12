@@ -115,14 +115,14 @@ class _ScanScreenState extends State<ScanScreen> {
                 ],
               ),
               
-              // The Send to AI Button (Only shows if an image is selected!)
+              // The Send to AI Button (Only shows if an image is selected)
               if (_selectedImage != null) ...[
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                    onPressed: () {
-                      // This pushes the user to the Results Screen and hands over the photo!
+                      // This pushes the user to the Results Screen and hands over the photo
                       Navigator.push(
                         context,
                         MaterialPageRoute(

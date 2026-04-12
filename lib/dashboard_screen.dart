@@ -28,14 +28,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _activateLiveStream(); // Start listening to Firebase
-    _fetchLiveWeather();   // Fetch the weather from the internet!
+    _fetchLiveWeather();   // Fetch the weather from the internet
   }
 
   // --- THE WEATHER FETCHING LOGIC ---
   Future<void> _fetchLiveWeather() async {
-    // 1. PASTE YOUR WEATHER API KEY HERE
+    //weather API dito
     const apiKey = '15b5beaa93fa45938b483443261104'; 
-    const city = 'Manila'; // Change this to your target location if needed!
+    const city = 'Manila'; // Change nalang this kung san mo want
     
     if (apiKey == 'YOUR_WEATHERAPI_KEY_HERE') {
       print("ALERT: Please insert your WeatherAPI key!");
@@ -48,7 +48,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        // We successfully got the data back, now we chop up the JSON!
+        //successfully got the data back, now we chop up the JSON!
         final data = jsonDecode(response.body);
         
         if (mounted) {

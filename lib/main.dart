@@ -6,11 +6,12 @@ import 'dashboard_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+
 void main() async {
   // 1. Ensures Flutter is fully booted before talking to the internet
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. The Firebase Handshake
+  // 2. The Firebase Handshake connection
   await Firebase.initializeApp(
     options: const FirebaseOptions(
       apiKey: "AIzaSyA2dyKzbmIei8z1YHr17fE9bnBD1CGW04c",
@@ -72,7 +73,7 @@ class MainLayoutScreen extends StatefulWidget {
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _currentIndex = 0;
 
-  // This IndexedStack holds all your screens and remembers their state!
+  // This IndexedStack holds all the screens and remembers their state!
   final List<Widget> _screens = [
     const DashboardScreen(),
     const ScanScreen(),

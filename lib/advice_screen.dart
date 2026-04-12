@@ -63,7 +63,7 @@ class _AdviceScreenState extends State<AdviceScreen> {
         }
       }
 
-      // Update the screen with the new alerts
+      // Update the screen with the new alertch
       setState(() {
         activeAlerts = newAlerts;
         isLoading = false;
