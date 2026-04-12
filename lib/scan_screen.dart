@@ -1,126 +1,146 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
+import 'results_screen.dart';
 
-class PlantScanScreen extends StatefulWidget {
-  const PlantScanScreen({Key? key}) : super(key: key);
+
+class ScanScreen extends StatefulWidget {
+  const ScanScreen({Key? key}) : super(key: key);
 
   @override
-  State<PlantScanScreen> createState() => _PlantScanScreenState();
+  State<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _PlantScanScreenState extends State<PlantScanScreen> {
-  CameraController? _controller;
-  Future<void>? _initializeControllerFuture;
+class _ScanScreenState extends State<ScanScreen> {
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
 
-  @override
-  void initState() {
-    super.initState();
-    _initCamera(); // Boot up the camera when the screen loads
-  }
+  // The function to open the camera or gallery
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024, // Compresses the image slightly so the AI runs faster
+        maxHeight: 1024,
+      );
 
-  Future<void> _initCamera() async {
-    // 1. Find the hardware cameras on the device
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
-
-    // 2. Pick the first one (usually the back camera)
-    final firstCamera = cameras.first;
-
-    // 3. Set up the controller
-    _controller = CameraController(
-      firstCamera,
-      ResolutionPreset.high,
-      enableAudio: false, // No audio needed for plants!
-    );
-
-    // 4. Initialize it and update the UI
-    _initializeControllerFuture = _controller!.initialize();
-    if (mounted) {
-      setState(() {});
+      if (pickedFile != null) {
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      print("Camera Error: $e");
     }
-  }
-
-  @override
-  void dispose() {
-    // Turn the camera off when leaving the screen to save battery
-    _controller?.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F9F6), 
+      backgroundColor: const Color(0xFFF6F9F6),
       body: SafeArea(
-        child: Column(
-          children: [
-            // --- TOP HEADER ---
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Plant Diagnostics",
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF2D332F)),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "Take a clear photo of the leaf to run AI disease analysis.",
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              const SizedBox(height: 32),
+
+              // The Image Display Box
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE0E0E0), width: 2),
+                  ),
+                  child: _selectedImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Image.file(_selectedImage!, fit: BoxFit.cover),
+                        )
+                      : const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.camera_alt_outlined, size: 64, color: Colors.grey),
+                            SizedBox(height: 16),
+                            Text("No image selected", style: TextStyle(color: Colors.grey)),
+                          ],
+                        ),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // The Action Buttons
+              Row(
                 children: [
-                  const Icon(Icons.document_scanner, color: Color(0xFF135A3B)),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Plant Scanner',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF135A3B)),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _pickImage(ImageSource.camera),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF81C784),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.camera_alt, color: Colors.white),
+                      label: const Text("Camera", style: TextStyle(color: Colors.white, fontSize: 16)),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _pickImage(ImageSource.gallery),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: Color(0xFF81C784), width: 2),
+                        ),
+                      ),
+                      icon: const Icon(Icons.photo_library, color: Color(0xFF81C784)),
+                      label: const Text("Gallery", style: TextStyle(color: Color(0xFF81C784), fontSize: 16)),
+                    ),
                   ),
                 ],
               ),
-            ),
-
-            // --- LIVE CAMERA FEED ---
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                decoration: BoxDecoration(
-                  color: Colors.black, // Black background while loading
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF135A3B), width: 4),
+              
+              // The Send to AI Button (Only shows if an image is selected!)
+              if (_selectedImage != null) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                   onPressed: () {
+                      // This pushes the user to the Results Screen and hands over the photo!
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ResultsScreen(imageFile: _selectedImage),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2D332F),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text("Run AI Analysis", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  ),
                 ),
-                clipBehavior: Clip.hardEdge, // Keeps the camera inside the rounded borders
-                child: _controller == null
-                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF135A3B)))
-                    : FutureBuilder<void>(
-                        future: _initializeControllerFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.done) {
-                            // Camera is ready, show the feed!
-                            return CameraPreview(_controller!);
-                          } else {
-                            // Camera is loading, show a spinner
-                            return const Center(child: CircularProgressIndicator(color: Color(0xFF135A3B)));
-                          }
-                        },
-                      ),
-              ),
-            ),
-
-            // --- FAKE CAPTURE BUTTON (For Now) ---
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: ElevatedButton(
-                onPressed: () {
-                   ScaffoldMessenger.of(context).showSnackBar(
-                     const SnackBar(content: Text('Scanning plant... (AI connection coming soon!)'))
-                   );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF135A3B),
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.camera_alt, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text('Analyze Plant', style: TextStyle(color: Colors.white, fontSize: 16)),
-                  ],
-                ),
-              ),
-            ),
-          ],
+              ]
+            ],
+          ),
         ),
       ),
     );
