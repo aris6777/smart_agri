@@ -226,7 +226,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 24),
                       const Text("My Digital Farm", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFA3D3B9), letterSpacing: 1.5)),
                       const SizedBox(height: 4),
-                      const Text("Greenhouse Stream", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+                      const Text("Smart Agriculture", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
                     ],
                   ),
                 ],
