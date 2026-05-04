@@ -4,17 +4,20 @@ import 'results_screen.dart';
 import 'advice_screen.dart';
 import 'dashboard_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   // 1. Ensures Flutter is fully booted before talking to the internet
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Load yung hidden
+  await dotenv.load(fileName: ".env");
+
   // 2. The Firebase Handshake connection
   await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: "AIzaSyA2dyKzbmIei8z1YHr17fE9bnBD1CGW04c",
-      appId: "1:716254020181:web:b41a8e3fe79ac642800adc",
+    options: FirebaseOptions(
+      apiKey: dotenv.env['FIREBASE_API_KEY'] ?? '',
+      appId: dotenv.env['FIREBASE_APP_ID'] ?? '',
       messagingSenderId: "716254020181",
       projectId: "smartagridb",
       // database url to para alam kung san titingin

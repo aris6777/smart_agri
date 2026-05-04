@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class ResultsScreen extends StatefulWidget {
   final File? imageFile;
@@ -21,23 +23,30 @@ class _ResultsScreenState extends State<ResultsScreen> {
   void initState() {
     super.initState();
     if (widget.imageFile != null) {
-      _runAIAnalysis(); // Trigger the real AI when the screen opens
+      _runAIAnalysis();
     }
   }
 
   Future<void> _runAIAnalysis() async {
-    // google studio API dito
-    const apiKey = 'AIzaSyB2tfUgZU3Cuu2_kC1WJqpWnoTZOcd30Po'; 
+    // Kukunin ang key mula sa .env file
+    final apiKey = dotenv.env['GEMINI_API_KEY']; 
     
+    if (apiKey == null || apiKey.isEmpty) {
+      print('ALERT: API Key not found in .env file!');
+      setState(() {
+        diagnosis = "Analysis Failed";
+        recommendation = "API Key missing. Please check .env file.";
+        isAnalyzing = false;
+      });
+      return;
+    }
 
     try {
-      // 2. Initialize the Gemini Vision model
       final model = GenerativeModel(
         model: 'gemini-2.5-flash',
         apiKey: apiKey,
       );
 
-      // 3. Prepare the image and give Gemini strict instructions
       final imageBytes = await widget.imageFile!.readAsBytes();
       final prompt = TextPart('''
         You are an expert plant pathologist. Analyze this plant image. 
@@ -49,33 +58,40 @@ class _ResultsScreenState extends State<ResultsScreen> {
       ''');
       final imagePart = DataPart('image/jpeg', imageBytes);
 
-      // 4. Send to Google's Cloud Servers
       final response = await model.generateContent([
         Content.multi([prompt, imagePart])
       ]);
 
-      // 5. Parse the result to update the UI
       final output = response.text ?? "";
       
       setState(() {
-        // Extracting the specific lines out of the AI's response
         diagnosis = _extractLine(output, "Disease:");
         confidence = _extractLine(output, "Confidence:");
         recommendation = _extractLine(output, "Recommendation:");
-        isAnalyzing = false; // Turn off the loading spinner!
+        isAnalyzing = false; 
       });
+
+      // --- FIREBASE SAVE BLOCK ---
+      // Isa-save lang sa history kapag successful ang scan
+      if (!diagnosis.contains("Analysis Failed") && !diagnosis.contains("Unknown") && !diagnosis.contains("Not a plant")) {
+        final DatabaseReference historyRef = FirebaseDatabase.instance.ref('scanHistory');
+        historyRef.push().set({
+          'diagnosis': diagnosis,
+          'confidence': confidence,
+          'timestamp': DateTime.now().toIso8601String(), 
+        });
+      }
 
     } catch (e) {
       print("AI Error: $e");
       setState(() {
         diagnosis = "Analysis Failed";
-        recommendation = "Please check your internet connection and API key.";
+        recommendation = "Please check your internet connection.";
         isAnalyzing = false;
       });
     }
   }
 
-  // Helper function to cleanly chop up the text the AI sends back
   String _extractLine(String text, String prefix) {
     try {
       final lines = text.split('\n');
@@ -112,10 +128,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     if (isAnalyzing) ...[
                       const CircularProgressIndicator(color: Color(0xFF81C784)),
                       const SizedBox(height: 24),
-                      const Text("Gemini AI is analyzing the leaf...", style: TextStyle(fontSize: 18, color: Colors.grey, fontStyle: FontStyle.italic)),
+                      // Ito yung custom text mo!
+                      const Text("analyzing...", style: TextStyle(fontSize: 18, color: Colors.grey, fontStyle: FontStyle.italic)),
                     ] else ...[
                       Icon(
-                        // Dynamically change the icon if it's healthy or sick
                         diagnosis.toLowerCase().contains("healthy") ? Icons.check_circle_outline : Icons.warning_amber_rounded, 
                         color: diagnosis.toLowerCase().contains("healthy") ? const Color(0xFF81C784) : const Color(0xFFFFB74D), 
                         size: 64
