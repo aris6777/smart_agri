@@ -71,7 +71,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   final List<Widget> _screens = [
     const DashboardScreen(),
     const ScanScreen(),
-    const ResultsScreen(),
+   ResultsScreen(
+    liveN: 0,
+    liveP: 0,
+    liveK: 0,
+    livePh: 0.0,
+    liveMoisture: 0,
+  ),
     const AdviceScreen(),
   ];
 

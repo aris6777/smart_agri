@@ -24,12 +24,29 @@ class _ScanScreenState extends State<ScanScreen> {
       final XFile? pickedFile = await _picker.pickImage(source: source);
       if (pickedFile != null && mounted) {
         // Send the image to your AI Results screen!
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ResultsScreen(imageFile: File(pickedFile.path)),
-          ),
-        );
+        // 1. Grab the exact soil data at this very moment
+final snapshot = await FirebaseDatabase.instance.ref('sensorData').get();
+
+// 2. Safely parse the data (with backups in case the sensor is offline)
+Map<String, dynamic> liveData = {};
+if (snapshot.exists && snapshot.value != null) {
+  liveData = Map<String, dynamic>.from(snapshot.value as Map);
+}
+
+// 3. Navigate and pass everything to the ResultsScreen
+Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => ResultsScreen(
+      imageFile: File(pickedFile.path), // Use whatever your image variable is named here
+      liveN: liveData['n'] ?? 0,
+      liveP: liveData['p'] ?? 0,
+      liveK: liveData['k'] ?? 0,
+      livePh: liveData['phLevel'] ?? 0.0,
+      liveMoisture: liveData['soilMoisture'] ?? 0,
+    ),
+  ),
+);
       }
     } catch (e) {
       print("Image picker error: $e");
