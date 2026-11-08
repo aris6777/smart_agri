@@ -12,13 +12,13 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // --- FIREBASE VARIABLES (8 Parameters) ---
+  // --- FIREBASE VARIABLES (7 Parameters + Status) ---
   final DatabaseReference _sensorRef = FirebaseDatabase.instance.ref('sensorData');
   String currentSoilMoisture = "--";
   String currentTemperature = "--";
   String currentPhLevel = "--";
   String currentEc = "--"; 
-  String currentFertility = "--"; 
+  String soilStatus = "Optimal";
   String currentNitrogen = "--"; 
   String currentPhosphorus = "--";
   String currentPotassium = "--";
@@ -88,23 +88,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         if (mounted) {
           setState(() {
-            if (data['soilMoisture'] != null) currentSoilMoisture = data['soilMoisture'].toString();
+            if (data['moisture'] != null) currentSoilMoisture = data['moisture'].toString();
             if (data['temperature'] != null) currentTemperature = data['temperature'].toString();
-            if (data['phLevel'] != null) currentPhLevel = data['phLevel'].toString();
+            if (data['ph'] != null) currentPhLevel = data['ph'].toString();
             if (data['ec'] != null) currentEc = data['ec'].toString();
-            if (data['fertility'] != null) currentFertility = data['fertility'].toString();
-            if (data['n'] != null) currentNitrogen = data['n'].toString();
-            if (data['p'] != null) currentPhosphorus = data['p'].toString();
-            if (data['k'] != null) currentPotassium = data['k'].toString();
+            if (data['nitrogen'] != null) currentNitrogen = data['nitrogen'].toString();
+            if (data['phosphorus'] != null) currentPhosphorus = data['phosphorus'].toString();
+            if (data['potassium'] != null) currentPotassium = data['potassium'].toString();
+
+            // Soil Status Calculation
+            double moisture = double.tryParse(currentSoilMoisture) ?? 0;
+            double ph = double.tryParse(currentPhLevel) ?? 7.0;
+
+            if (moisture < 20 || moisture > 80 || ph < 5.5 || ph > 7.5) {
+              soilStatus = "Needs Attention";
+            } else {
+              soilStatus = "Optimal";
+            }
           });
         }
       } catch (e) {
         print("Database Error: $e");
       }
     });
-  }
+  } // <--- FIXED: Properly closed _activateLiveStream() method here
 
   // --- UI BUILDERS ---
+  Widget _buildSoilStatusCard() {
+    bool isOptimal = soilStatus == "Optimal";
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isOptimal ? const Color(0xFFE8F5E9) : const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isOptimal ? const Color(0xFFA5D6A7) : const Color(0xFFFFCC80), 
+          width: 1
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isOptimal ? LucideIcons.checkCircle2 : LucideIcons.alertTriangle,
+            color: isOptimal ? Colors.green : Colors.orange,
+            size: 36,
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Overall Soil Status",
+                style: TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                soilStatus,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isOptimal ? Colors.green[800] : Colors.orange[800],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSensorCard(String title, String value, String unit, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -172,7 +225,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAF8),
-      // Notice: SafeArea is GONE!
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,7 +232,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // --- ORGANIC HEADER ---
             Container(
               width: double.infinity,
-              // SMART PADDING: Pushes text down below the notch automatically!
               padding: EdgeInsets.only(
                 top: MediaQuery.of(context).padding.top + 20, 
                 left: 24, 
@@ -238,43 +289,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- FERTILITY WIDE CARD ---
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)]),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFFA5D6A7), width: 1),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                          child: const Icon(LucideIcons.flower2, color: Color(0xFF2E7D32), size: 28),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text("Soil Fertility", style: TextStyle(color: Color(0xFF1B5E20), fontSize: 14, fontWeight: FontWeight.w700)),
-                              const SizedBox(height: 4),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(currentFertility, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E2923))),
-                                  const SizedBox(width: 4),
-                                  const Text("lvl", style: TextStyle(fontSize: 14, color: Color(0xFF2E7D32), fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // --- SOIL STATUS WIDE CARD ---
+                  _buildSoilStatusCard(),
                   const SizedBox(height: 24),
 
                   // --- SENSOR GRID ---
