@@ -34,14 +34,14 @@ class _AdviceScreenState extends State<AdviceScreen> {
       List<Widget> newAlerts = [];
 
       // 1. Check Soil Moisture (Optimal: 40% - 80%)
-      if (data['soilMoisture'] != null) {
-        double moisture = double.tryParse(data['soilMoisture'].toString()) ?? 0;
-        if (moisture < 40) {
-          newAlerts.add(_buildAlertCard("CRITICAL: Dry Soil", "Moisture is at $moisture%. The plants are at risk of wilting. Please initiate irrigation immediately.", Icons.water_drop, const Color(0xFFFFB74D)));
-        } else if (moisture > 80) {
-          newAlerts.add(_buildAlertCard("WARNING: Waterlogged", "Moisture is extremely high ($moisture%). Stop watering to prevent root rot.", Icons.water_damage, const Color(0xFF64B5F6)));
-        }
-      }
+if (data['moisture'] != null) {
+  double moisture = double.tryParse(data['moisture'].toString()) ?? 0;
+  if (moisture < 40) {
+    newAlerts.add(_buildAlertCard("CRITICAL: Dry Soil", "Moisture is at $moisture%. The plants are at risk of wilting. Please initiate irrigation immediately.", Icons.water_drop, const Color(0xFFFFB74D)));
+  } else if (moisture > 80) {
+    newAlerts.add(_buildAlertCard("WARNING: Waterlogged", "Moisture is extremely high ($moisture%). Stop watering to prevent root rot.", Icons.water_damage, const Color(0xFF64B5F6)));
+  }
+}
 
       // 2. Check Temperature (Optimal: 18°C - 30°C)
       if (data['temperature'] != null) {
@@ -54,14 +54,14 @@ class _AdviceScreenState extends State<AdviceScreen> {
       }
 
       // 3. Check pH Level (Optimal: 5.5 - 7.0)
-      if (data['phLevel'] != null) {
-        double ph = double.tryParse(data['phLevel'].toString()) ?? 0;
-        if (ph < 5.5) {
-          newAlerts.add(_buildAlertCard("WARNING: Highly Acidic", "pH is $ph. Nutrient lockout may occur. Mix agricultural lime into the soil to neutralize acidity.", Icons.science, const Color(0xFFBA68C8)));
-        } else if (ph > 7.0) {
-          newAlerts.add(_buildAlertCard("WARNING: Highly Alkaline", "pH is $ph. Plants may struggle to absorb iron. Apply elemental sulfur or acidifying fertilizers.", Icons.science, const Color(0xFFBA68C8)));
-        }
-      }
+if (data['ph'] != null) {
+  double ph = double.tryParse(data['ph'].toString()) ?? 0;
+  if (ph < 5.5) {
+    newAlerts.add(_buildAlertCard("WARNING: Highly Acidic", "pH is $ph. Nutrient lockout may occur. Mix agricultural lime into the soil to neutralize acidity.", Icons.science, const Color(0xFFBA68C8)));
+  } else if (ph > 7.0) {
+    newAlerts.add(_buildAlertCard("WARNING: Highly Alkaline", "pH is $ph. Plants may struggle to absorb iron. Apply elemental sulfur or acidifying fertilizers.", Icons.science, const Color(0xFFBA68C8)));
+  }
+}
 
       // Update the screen with the new alertch
       setState(() {

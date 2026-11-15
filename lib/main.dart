@@ -94,9 +94,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         int problems = 0;
 
         // Safely extract values using the EXACT names from your Firebase
-        double moisture = (data['soilMoisture'] ?? 0).toDouble();
-        double temp = (data['temperature'] ?? 0).toDouble();
-        double ph = (data['phLevel'] ?? 0).toDouble();
+        double moisture = double.tryParse(data['moisture']?.toString() ?? '0') ?? 0.0;
+double temp = double.tryParse(data['temperature']?.toString() ?? '0') ?? 0.0;
+double ph = double.tryParse(data['ph']?.toString() ?? '0') ?? 0.0;
 
         // Check against our thresholds
         if (moisture < 20.0) problems++; 

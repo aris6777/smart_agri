@@ -25,28 +25,28 @@ class _ScanScreenState extends State<ScanScreen> {
       if (pickedFile != null && mounted) {
         // Send the image to your AI Results screen!
         // 1. Grab the exact soil data at this very moment
-final snapshot = await FirebaseDatabase.instance.ref('sensorData').get();
+        final snapshot = await FirebaseDatabase.instance.ref('sensorData').get();
 
-// 2. Safely parse the data (with backups in case the sensor is offline)
-Map<String, dynamic> liveData = {};
-if (snapshot.exists && snapshot.value != null) {
-  liveData = Map<String, dynamic>.from(snapshot.value as Map);
-}
+        // 2. Safely parse the data (with backups in case the sensor is offline)
+        Map<String, dynamic> liveData = {};
+        if (snapshot.exists && snapshot.value != null) {
+          liveData = Map<String, dynamic>.from(snapshot.value as Map);
+        }
 
-// 3. Navigate and pass everything to the ResultsScreen
-Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => ResultsScreen(
-      imageFile: File(pickedFile.path), // Use whatever your image variable is named here
-      liveN: liveData['n'] ?? 0,
-      liveP: liveData['p'] ?? 0,
-      liveK: liveData['k'] ?? 0,
-      livePh: liveData['phLevel'] ?? 0.0,
-      liveMoisture: liveData['soilMoisture'] ?? 0,
-    ),
-  ),
-);
+        // 3. Navigate and pass everything to the ResultsScreen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResultsScreen(
+              imageFile: File(pickedFile.path),
+              liveN: liveData['nitrogen'] ?? 0,
+              liveP: liveData['phosphorus'] ?? 0,
+              liveK: liveData['potassium'] ?? 0,
+              livePh: liveData['ph'] ?? 0.0,
+              liveMoisture: liveData['moisture'] ?? 0,
+            ),
+          ),
+        );
       }
     } catch (e) {
       print("Image picker error: $e");
@@ -107,7 +107,7 @@ Navigator.push(
                         children: [
                           Icon(LucideIcons.imagePlus, color: Color(0xFF135A3B), size: 40),
                           SizedBox(height: 12),
-                          Text("Upload Gallery", style: TextStyle(color: const Color(0xFF135A3B), fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text("Upload Gallery", style: TextStyle(color: Color(0xFF135A3B), fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
                       ),
                     ),
