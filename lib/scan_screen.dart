@@ -14,20 +14,20 @@ class ScanScreen extends StatefulWidget {
 
 class _ScanScreenState extends State<ScanScreen> {
   final ImagePicker _picker = ImagePicker();
-  
-  //diretso dun sa firebase history folder and will be asking for the last 5 scans
-  final Query _historyQuery = FirebaseDatabase.instance.ref('scanHistory').limitToLast(5);
+
+  final Query _historyQuery =
+      FirebaseDatabase.instance.ref('scanHistory').limitToLast(5);
 
   // --- CAMERA & GALLERY LOGIC ---
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(source: source);
       if (pickedFile != null && mounted) {
-        // Send the image to your AI Results screen!
         // 1. Grab the exact soil data at this very moment
-        final snapshot = await FirebaseDatabase.instance.ref('sensorData').get();
+        final snapshot =
+            await FirebaseDatabase.instance.ref('sensorData').get();
 
-        // 2. Safely parse the data (with backups in case the sensor is offline)
+        // 2. Safely parse the data
         Map<String, dynamic> liveData = {};
         if (snapshot.exists && snapshot.value != null) {
           liveData = Map<String, dynamic>.from(snapshot.value as Map);
@@ -44,6 +44,8 @@ class _ScanScreenState extends State<ScanScreen> {
               liveK: liveData['potassium'] ?? 0,
               livePh: liveData['ph'] ?? 0.0,
               liveMoisture: liveData['moisture'] ?? 0,
+              liveTemp: liveData['temperature'] ?? 0,
+              liveEc: liveData['ec'] ?? 0,
             ),
           ),
         );
@@ -53,7 +55,6 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  // Helper to format the ugly timestamp into a nice readable date
   String _formatDate(String isoString) {
     try {
       final date = DateTime.parse(isoString);
@@ -70,7 +71,10 @@ class _ScanScreenState extends State<ScanScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text("Plant Scanner", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Plant Scanner",
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,12 +89,23 @@ class _ScanScreenState extends State<ScanScreen> {
                     onTap: () => _pickImage(ImageSource.camera),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 24),
-                      decoration: BoxDecoration(color: const Color(0xFF135A3B), borderRadius: BorderRadius.circular(20)),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF135A3B),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                       child: const Column(
                         children: [
-                          Icon(LucideIcons.camera, color: Colors.white, size: 40),
+                          Icon(LucideIcons.camera,
+                              color: Colors.white, size: 40),
                           SizedBox(height: 12),
-                          Text("Take Photo", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(
+                            "Take Photo",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -102,12 +117,24 @@ class _ScanScreenState extends State<ScanScreen> {
                     onTap: () => _pickImage(ImageSource.gallery),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 24),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFE0E0E0))),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE0E0E0)),
+                      ),
                       child: const Column(
                         children: [
-                          Icon(LucideIcons.imagePlus, color: Color(0xFF135A3B), size: 40),
+                          Icon(LucideIcons.imagePlus,
+                              color: Color(0xFF135A3B), size: 40),
                           SizedBox(height: 12),
-                          Text("Upload Gallery", style: TextStyle(color: Color(0xFF135A3B), fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(
+                            "Upload Gallery",
+                            style: TextStyle(
+                              color: Color(0xFF135A3B),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -116,11 +143,18 @@ class _ScanScreenState extends State<ScanScreen> {
               ],
             ),
           ),
-          
+
           // --- DIVIDER ---
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.0),
-            child: Text("Recent Scans", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF2D332F))),
+            child: Text(
+              "Recent Scans",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D332F),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -130,28 +164,37 @@ class _ScanScreenState extends State<ScanScreen> {
               stream: _historyQuery.onValue,
               builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Color(0xFF81C784)));
-                }
-
-                if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
                   return const Center(
-                    child: Text("No scans yet. Take a photo to get started!", style: TextStyle(color: Colors.grey)),
+                    child: CircularProgressIndicator(color: Color(0xFF81C784)),
                   );
                 }
 
-                // Convert Firebase data into a list
-                Map<dynamic, dynamic> map = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+                if (!snapshot.hasData ||
+                    snapshot.data!.snapshot.value == null) {
+                  return const Center(
+                    child: Text(
+                      "No scans yet. Take a photo to get started!",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  );
+                }
+
+                Map<dynamic, dynamic> map =
+                    snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
                 List<dynamic> historyList = map.values.toList();
-                
-                // Sort the list so the newest scan is at the top!
-                historyList.sort((a, b) => b['timestamp'].compareTo(a['timestamp']));
+                historyList.sort(
+                    (a, b) => b['timestamp'].compareTo(a['timestamp']));
 
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0, vertical: 8.0),
                   itemCount: historyList.length,
                   itemBuilder: (context, index) {
                     var item = historyList[index];
-                    bool isHealthy = item['diagnosis'].toString().toLowerCase().contains('healthy');
+                    bool isHealthy = item['diagnosis']
+                        .toString()
+                        .toLowerCase()
+                        .contains('healthy');
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -163,16 +206,21 @@ class _ScanScreenState extends State<ScanScreen> {
                       ),
                       child: Row(
                         children: [
-                          // Dynamic Icon based on AI result
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: isHealthy ? const Color(0xFFE8F5E9) : const Color(0xFFFFF3E0),
+                              color: isHealthy
+                                  ? const Color(0xFFE8F5E9)
+                                  : const Color(0xFFFFF3E0),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
-                              isHealthy ? Icons.check_circle_outline : Icons.warning_amber_rounded,
-                              color: isHealthy ? const Color(0xFF81C784) : const Color(0xFFFFB74D),
+                              isHealthy
+                                  ? Icons.check_circle_outline
+                                  : Icons.warning_amber_rounded,
+                              color: isHealthy
+                                  ? const Color(0xFF81C784)
+                                  : const Color(0xFFFFB74D),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -180,13 +228,32 @@ class _ScanScreenState extends State<ScanScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(item['diagnosis'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF2D332F))),
+                                Text(
+                                  item['diagnosis'],
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Color(0xFF2D332F),
+                                  ),
+                                ),
                                 const SizedBox(height: 4),
-                                Text(_formatDate(item['timestamp']), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                Text(
+                                  _formatDate(item['timestamp']),
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                          Text(item['confidence'], style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF135A3B))),
+                          Text(
+                            item['confidence'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF135A3B),
+                            ),
+                          ),
                         ],
                       ),
                     );
