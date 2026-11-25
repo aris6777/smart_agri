@@ -18,34 +18,37 @@ class _ScanScreenState extends State<ScanScreen> {
   final Query _historyQuery =
       FirebaseDatabase.instance.ref('scanHistory').limitToLast(5);
 
-  // --- CAMERA & GALLERY LOGIC ---
-  Future<void> _pickImage(ImageSource source) async {
+  // --- CAMERA & GALLERY LOGIC WITH EXPLICIT SENSOR CHOICE ---
+  Future<void> _pickImage(
+    ImageSource source, {
+    required bool withSensor,
+  }) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(source: source);
       if (pickedFile != null && mounted) {
-        // 1. Grab the exact soil data at this very moment
-        final snapshot =
-            await FirebaseDatabase.instance.ref('sensorData').get();
-
-        // 2. Safely parse the data
         Map<String, dynamic> liveData = {};
-        if (snapshot.exists && snapshot.value != null) {
-          liveData = Map<String, dynamic>.from(snapshot.value as Map);
+
+        if (withSensor) {
+          final snapshot =
+              await FirebaseDatabase.instance.ref('sensorData').get();
+          if (snapshot.exists && snapshot.value != null) {
+            liveData = Map<String, dynamic>.from(snapshot.value as Map);
+          }
         }
 
-        // 3. Navigate and pass everything to the ResultsScreen
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ResultsScreen(
               imageFile: File(pickedFile.path),
-              liveN: liveData['nitrogen'] ?? 0,
-              liveP: liveData['phosphorus'] ?? 0,
-              liveK: liveData['potassium'] ?? 0,
-              livePh: liveData['ph'] ?? 0.0,
-              liveMoisture: liveData['moisture'] ?? 0,
-              liveTemp: liveData['temperature'] ?? 0,
-              liveEc: liveData['ec'] ?? 0,
+              includeSensorData: withSensor,
+              liveN: withSensor ? (liveData['nitrogen'] ?? 0) : null,
+              liveP: withSensor ? (liveData['phosphorus'] ?? 0) : null,
+              liveK: withSensor ? (liveData['potassium'] ?? 0) : null,
+              livePh: withSensor ? (liveData['ph'] ?? 0.0) : null,
+              liveMoisture: withSensor ? (liveData['moisture'] ?? 0) : null,
+              liveTemp: withSensor ? (liveData['temperature'] ?? 0) : null,
+              liveEc: withSensor ? (liveData['ec'] ?? 0) : null,
             ),
           ),
         );
@@ -64,6 +67,149 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
+  Widget _buildModeButton({
+    required String label,
+    required IconData icon,
+    required bool isPrimary,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            color: isPrimary ? const Color(0xFF135A3B) : const Color(0xFFF6F9F6),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isPrimary
+                  ? const Color(0xFF135A3B)
+                  : const Color(0xFFD5E2D8),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: isPrimary ? Colors.white : const Color(0xFF135A3B),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isPrimary ? Colors.white : const Color(0xFF135A3B),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScanSectionCard({
+    required String title,
+    required String subtitle,
+    required IconData badgeIcon,
+    required bool withSensor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: withSensor
+              ? const Color(0xFFA5D6A7)
+              : const Color(0xFFE0E0E0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: withSensor
+                      ? const Color(0xFFE8F5E9)
+                      : const Color(0xFFF1F5F2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  badgeIcon,
+                  size: 18,
+                  color: withSensor
+                      ? const Color(0xFF135A3B)
+                      : const Color(0xFF455A64),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E2923),
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildModeButton(
+                label: "Camera",
+                icon: LucideIcons.camera,
+                isPrimary: withSensor,
+                onTap: () =>
+                    _pickImage(ImageSource.camera, withSensor: withSensor),
+              ),
+              const SizedBox(width: 12),
+              _buildModeButton(
+                label: "Gallery",
+                icon: LucideIcons.imagePlus,
+                isPrimary: false,
+                onTap: () =>
+                    _pickImage(ImageSource.gallery, withSensor: withSensor),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -79,66 +225,23 @@ class _ScanScreenState extends State<ScanScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- TOP SECTION: SCAN BUTTONS ---
+          // --- WITH SENSOR & WITHOUT SENSOR BUTTON CARDS ---
           Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+            child: Column(
               children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _pickImage(ImageSource.camera),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF135A3B),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Column(
-                        children: [
-                          Icon(LucideIcons.camera,
-                              color: Colors.white, size: 40),
-                          SizedBox(height: 12),
-                          Text(
-                            "Take Photo",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                _buildScanSectionCard(
+                  title: "Scan With Soil Sensor",
+                  subtitle: "Combines plant photo with live moisture, temp & EC",
+                  badgeIcon: LucideIcons.cpu,
+                  withSensor: true,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _pickImage(ImageSource.gallery),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE0E0E0)),
-                      ),
-                      child: const Column(
-                        children: [
-                          Icon(LucideIcons.imagePlus,
-                              color: Color(0xFF135A3B), size: 40),
-                          SizedBox(height: 12),
-                          Text(
-                            "Upload Gallery",
-                            style: TextStyle(
-                              color: Color(0xFF135A3B),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                const SizedBox(height: 12),
+                _buildScanSectionCard(
+                  title: "Scan Without Soil Sensor",
+                  subtitle: "Analyzes the plant photo only (no sensor data)",
+                  badgeIcon: LucideIcons.leaf,
+                  withSensor: false,
                 ),
               ],
             ),
@@ -156,7 +259,7 @@ class _ScanScreenState extends State<ScanScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // --- BOTTOM SECTION: HISTORY LIST ---
           Expanded(

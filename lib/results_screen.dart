@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 class ResultsScreen extends StatefulWidget {
   final File? imageFile;
+  final bool includeSensorData;
   final dynamic liveN;
   final dynamic liveP;
   final dynamic liveK;
@@ -18,11 +19,12 @@ class ResultsScreen extends StatefulWidget {
   const ResultsScreen({
     Key? key,
     this.imageFile,
-    required this.liveN,
-    required this.liveP,
-    required this.liveK,
-    required this.livePh,
-    required this.liveMoisture,
+    this.includeSensorData = true,
+    this.liveN,
+    this.liveP,
+    this.liveK,
+    this.livePh,
+    this.liveMoisture,
     this.liveTemp = 0,
     this.liveEc = 0,
   }) : super(key: key);
@@ -66,21 +68,33 @@ class _ResultsScreenState extends State<ResultsScreen> {
       );
 
       final imageBytes = await widget.imageFile!.readAsBytes();
+
+      final String sensorInstructions = widget.includeSensorData
+          ? """
+Also evaluate these live soil sensor readings specifically for THIS plant species (for example, cacti and succulents like Kalanchoe prefer drier soil and should not be watered just because moisture is around 20-30%, whereas leafy/tropical plants need higher moisture):
+- Soil Moisture: ${widget.liveMoisture ?? 0}%
+- Soil Temperature: ${widget.liveTemp ?? 0}°C
+- Soil EC (Salts/Nutrients): ${widget.liveEc ?? 0} µS/cm
+
+Write a clear, natural 2-sentence explanation in Recommendation that names the plant, mentions the relevant soil sensor reading(s), explains whether those readings fit this specific plant type, and gives simple next-step care advice.
+"""
+          : """
+Do NOT include or mention any soil sensor readings, moisture percentages, temperature values, or EC numbers. Base the explanation strictly on what you see on the plant in the photo.
+
+Write a clear, natural 2-sentence explanation in Recommendation that names the plant, describes its visual condition, and gives simple next-step care advice based only on the image.
+""";
+
       final prompt = TextPart("""
 You are a helpful, beginner-friendly plant care assistant.
-Step 1: Identify the exact type or species of plant in the photo (e.g., Kalanchoe, Cactus, Pechay, Snake Plant, Tomato). If the image is not a plant, set Plant to 'None' and Disease to 'Not a plant'.
-Step 2: Check the plant's visual health AND evaluate the live soil sensor readings based on what THIS SPECIFIC PLANT SPECIES actually needs (for example, cacti and succulents like Kalanchoe prefer drier soil and should not be watered just because moisture is around 20-30%, whereas tropical or leafy plants need higher moisture):
-- Soil Moisture: ${widget.liveMoisture}%
-- Soil Temperature: ${widget.liveTemp}°C
-- Soil EC (Salts/Nutrients): ${widget.liveEc} µS/cm
-
-Step 3: Write a clear, natural 2-sentence explanation in Recommendation that names the plant, mentions the relevant soil sensor reading(s) (like moisture ${widget.liveMoisture}%), explains whether that reading is good or bad for this specific plant type, and gives simple next-step care advice. Avoid long paragraphs.
+Identify the exact type or species of plant in the photo (e.g., Kalanchoe, Cactus, Pechay, Snake Plant, Tomato). If the image is not a plant, set Plant to 'None' and Disease to 'Not a plant'.
+$sensorInstructions
+Keep it concise and easy to read without long paragraphs.
 
 Respond STRICTLY in this exact format with no extra text:
 Plant: [Common name of the plant]
 Disease: [Short condition name or 'Healthy']
 Confidence: [Percentage, e.g., 88%]
-Recommendation: [2 clear, friendly sentences referencing the plant type and exact soil sensor numbers]
+Recommendation: [2 clear, friendly sentences]
 """);
 
       final imagePart = DataPart('image/jpeg', imageBytes);
@@ -108,24 +122,28 @@ Recommendation: [2 clear, friendly sentences referencing the plant type and exac
         final DatabaseReference historyRef =
             FirebaseDatabase.instance.ref('scanHistory');
 
-        final Map<String, dynamic> currentLiveSoilData = {
-          "moisture": widget.liveMoisture,
-          "temperature": widget.liveTemp,
-          "ec": widget.liveEc,
-          "nitrogen": widget.liveN,
-          "phosphorus": widget.liveP,
-          "potassium": widget.liveK,
-          "ph": widget.livePh,
-        };
-
-        await historyRef.push().set({
+        final Map<String, dynamic> record = {
           'plant_type': plantType,
           'diagnosis': parsedDiagnosis,
           'confidence': parsedConfidence,
           'recommendation': parsedRecommendation,
+          'with_sensor': widget.includeSensorData,
           'timestamp': DateTime.now().toIso8601String(),
-          'soil_snapshot': currentLiveSoilData,
-        });
+        };
+
+        if (widget.includeSensorData) {
+          record['soil_snapshot'] = {
+            "moisture": widget.liveMoisture ?? 0,
+            "temperature": widget.liveTemp ?? 0,
+            "ec": widget.liveEc ?? 0,
+            "nitrogen": widget.liveN ?? 0,
+            "phosphorus": widget.liveP ?? 0,
+            "potassium": widget.liveK ?? 0,
+            "ph": widget.livePh ?? 0.0,
+          };
+        }
+
+        await historyRef.push().set(record);
       }
     } catch (e) {
       print("AI Error: $e");
@@ -240,10 +258,50 @@ Recommendation: [2 clear, friendly sentences referencing the plant type and exac
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 14),
+
+                    // --- SCAN MODE INDICATOR PILL ---
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: widget.includeSensorData
+                            ? const Color(0xFFE8F5E9)
+                            : const Color(0xFFEDEFF2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            widget.includeSensorData
+                                ? LucideIcons.cpu
+                                : LucideIcons.leaf,
+                            size: 14,
+                            color: widget.includeSensorData
+                                ? const Color(0xFF135A3B)
+                                : const Color(0xFF455A64),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            widget.includeSensorData
+                                ? "With Soil Sensor"
+                                : "Without Soil Sensor",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: widget.includeSensorData
+                                  ? const Color(0xFF135A3B)
+                                  : const Color(0xFF455A64),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
 
                     if (isAnalyzing) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
@@ -264,7 +322,7 @@ Recommendation: [2 clear, friendly sentences referencing the plant type and exac
                             ),
                             SizedBox(height: 16),
                             Text(
-                              "Identifying plant & checking soil...",
+                              "Analyzing your plant...",
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -305,7 +363,6 @@ Recommendation: [2 clear, friendly sentences referencing the plant type and exac
                         ),
                         child: Column(
                           children: [
-                            // Identified Plant Pill
                             if (plantType.isNotEmpty &&
                                 plantType.toLowerCase() != "none" &&
                                 plantType.toLowerCase() != "unknown")
@@ -383,7 +440,7 @@ Recommendation: [2 clear, friendly sentences referencing the plant type and exac
                       ),
                       const SizedBox(height: 16),
 
-                      // --- CARE TIP & SOIL SNAPSHOT CARD ---
+                      // --- CARE TIP CARD ---
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
@@ -417,9 +474,11 @@ Recommendation: [2 clear, friendly sentences referencing the plant type and exac
                                   ),
                                 ),
                                 const SizedBox(width: 10),
-                                const Text(
-                                  "Plant & Soil Insight",
-                                  style: TextStyle(
+                                Text(
+                                  widget.includeSensorData
+                                      ? "Plant & Soil Insight"
+                                      : "Plant Care Tip",
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF1E2923),
@@ -427,32 +486,31 @@ Recommendation: [2 clear, friendly sentences referencing the plant type and exac
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-
-                            // Compact Soil Sensor Readings Row
-                            Row(
-                              children: [
-                                _buildMiniReading(
-                                  LucideIcons.droplets,
-                                  "Moisture",
-                                  "${widget.liveMoisture}%",
-                                ),
-                                const SizedBox(width: 8),
-                                _buildMiniReading(
-                                  LucideIcons.thermometer,
-                                  "Temp",
-                                  "${widget.liveTemp}°C",
-                                ),
-                                const SizedBox(width: 8),
-                                _buildMiniReading(
-                                  LucideIcons.zap,
-                                  "EC",
-                                  "${widget.liveEc} µS",
-                                ),
-                              ],
-                            ),
+                            if (widget.includeSensorData) ...[
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  _buildMiniReading(
+                                    LucideIcons.droplets,
+                                    "Moisture",
+                                    "${widget.liveMoisture ?? 0}%",
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildMiniReading(
+                                    LucideIcons.thermometer,
+                                    "Temp",
+                                    "${widget.liveTemp ?? 0}°C",
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildMiniReading(
+                                    LucideIcons.zap,
+                                    "EC",
+                                    "${widget.liveEc ?? 0} µS",
+                                  ),
+                                ],
+                              ),
+                            ],
                             const SizedBox(height: 14),
-
                             Text(
                               recommendation,
                               style: const TextStyle(
